@@ -116,7 +116,9 @@
             const [iconMapping, setIconMapping] = useState({});
             const [usedIcons, setUsedIcons] = useState({ check: 0, x: 0, heart: 0 });
             const [improvementPlan, setImprovementPlan] = useState({ quality: '', action1: '', action2: '', action3: '' });
+            
             const [showFinalModal, setShowFinalModal] = useState(false);
+            const [showCreditsModal, setShowCreditsModal] = useState(false);
             const [showValidationError, setShowValidationError] = useState(false);
 
             const calculateScore = () => {
@@ -187,7 +189,6 @@
                 setUsedIcons(newUsedIcons);
             };
 
-            // Remove icon from quality when clicked (Part 2)
             const removeIcon = (qualityId) => {
                 const oldIcon = iconMapping[qualityId];
                 if (!oldIcon) return;
@@ -220,7 +221,7 @@
                 switch(step) {
                     case 1:
                         return (
-                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in relative w-full">
                                 <h1 className="text-5xl font-black text-[#003399] mb-8 leading-tight">
                                     Cualidades de un <br/><span className="text-blue-600">Buen Líder</span>
                                 </h1>
@@ -228,6 +229,48 @@
                                 <button onClick={() => setStep(2)} className="bg-[#003399] hover:bg-blue-800 text-white px-10 py-4 rounded-full font-bold transition-all transform hover:scale-105 shadow-xl flex items-center gap-2">
                                     Comenzar Actividad <IconChevronRight />
                                 </button>
+
+                                {/* Credits Button - Bottom Left */}
+                                <button 
+                                    onClick={() => setShowCreditsModal(true)}
+                                    className="absolute bottom-0 left-0 md:-bottom-8 md:-left-8 text-[#003399] font-bold text-sm bg-white/80 backdrop-blur px-6 py-2 rounded-xl shadow-sm border border-blue-100 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                                >
+                                    <IconInfo size={16}/> Créditos
+                                </button>
+
+                                {showCreditsModal && (
+                                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                                        <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full text-left relative shadow-2xl animate-bounce-in">
+                                            <button onClick={() => setShowCreditsModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 p-1"><IconX size={24}/></button>
+                                            
+                                            <h2 className="text-2xl font-black text-[#003399] mb-6 border-b pb-2">Información del Proyecto</h2>
+                                            
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Fuente:</h3>
+                                                    <p className="text-sm text-gray-600 leading-relaxed italic">
+                                                        Leis, M. & Wormington, S. (2026). 12 Essential qualities of effective leadership. Center for Creative Leadership. 
+                                                        <br/>
+                                                        <a href="https://www.ccl.org/articles/leading-effectively-articles/characteristics-good-leader/" target="_blank" className="text-blue-600 underline">https://www.ccl.org/articles/leading-effectively-articles/characteristics-good-leader/</a>
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Créditos de Contenido:</h3>
+                                                        <p className="text-sm font-bold text-gray-800">Dra. Claudia Ramos Garza</p>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Innovación Curricular:</h3>
+                                                        <p className="text-sm font-bold text-gray-800">Omar Velasco</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button onClick={() => setShowCreditsModal(false)} className="mt-8 w-full bg-[#003399] text-white py-3 rounded-xl font-black hover:bg-blue-800 shadow-lg">Cerrar</button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     
