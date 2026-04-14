@@ -118,14 +118,13 @@
             const [flippedBank, setFlippedBank] = useState({});
             const [flippedPriority, setFlippedPriority] = useState({});
             
-            // INDEPENDENT MAPPING FOR STATUS (CHECK/X) AND HEART
-            const [iconMapping, setIconMapping] = useState({}); // { [id]: { status: 'check'|'x'|null, heart: boolean } }
+            const [iconMapping, setIconMapping] = useState({}); 
             const [usedIcons, setUsedIcons] = useState({ check: 0, x: 0, heart: 0 });
             const [improvementPlan, setImprovementPlan] = useState({ quality: '', action1: '', action2: '', action3: '' });
             
             const [showFinalModal, setShowFinalModal] = useState(false);
             const [showCreditsModal, setShowCreditsModal] = useState(false);
-            const [showValidationError, setShowValidationError] = useState(false);
+            const [validationError, setValidationError] = useState("");
 
             const calculateScore = () => {
                 const selectedQualities = selections.filter(s => s !== null);
@@ -174,33 +173,19 @@
                 const iconType = e.dataTransfer.getData("iconType");
                 const currentData = iconMapping[qualityId] || { status: null, heart: false };
 
-                // Handle check/x logic
                 if (iconType === 'check' || iconType === 'x') {
                     if (usedIcons[iconType] >= 3 && currentData.status !== iconType) return;
-                    
                     const oldStatus = currentData.status;
                     const newUsedIcons = { ...usedIcons };
-                    
                     if (oldStatus) newUsedIcons[oldStatus] = Math.max(0, newUsedIcons[oldStatus] - 1);
                     newUsedIcons[iconType] = newUsedIcons[iconType] + 1;
-                    
-                    setIconMapping(prev => ({
-                        ...prev,
-                        [qualityId]: { ...currentData, status: iconType }
-                    }));
+                    setIconMapping(prev => ({ ...prev, [qualityId]: { ...currentData, status: iconType } }));
                     setUsedIcons(newUsedIcons);
-                } 
-                // Handle heart logic (can coexist)
-                else if (iconType === 'heart') {
+                } else if (iconType === 'heart') {
                     if (usedIcons.heart >= 1 && !currentData.heart) return;
-                    
                     const newUsedIcons = { ...usedIcons };
                     if (!currentData.heart) newUsedIcons.heart = newUsedIcons.heart + 1;
-                    
-                    setIconMapping(prev => ({
-                        ...prev,
-                        [qualityId]: { ...currentData, heart: true }
-                    }));
+                    setIconMapping(prev => ({ ...prev, [qualityId]: { ...currentData, heart: true } }));
                     setUsedIcons(newUsedIcons);
                 }
             };
@@ -209,10 +194,8 @@
                 if (e) e.stopPropagation();
                 const currentData = iconMapping[qualityId];
                 if (!currentData) return;
-
                 const newMapping = { ...iconMapping };
                 const newUsedIcons = { ...usedIcons };
-
                 if (type === 'status' && currentData.status) {
                     newUsedIcons[currentData.status] = Math.max(0, newUsedIcons[currentData.status] - 1);
                     newMapping[qualityId] = { ...currentData, status: null };
@@ -220,23 +203,25 @@
                     newUsedIcons.heart = Math.max(0, newUsedIcons.heart - 1);
                     newMapping[qualityId] = { ...currentData, heart: false };
                 }
-
-                // Clean up empty objects
-                if (!newMapping[qualityId].status && !newMapping[qualityId].heart) {
-                    delete newMapping[qualityId];
-                }
-
+                if (!newMapping[qualityId].status && !newMapping[qualityId].heart) delete newMapping[qualityId];
                 setIconMapping(newMapping);
                 setUsedIcons(newUsedIcons);
             };
 
             const handleFinalSubmit = () => {
-                const allPlaced = usedIcons.check === 3 && usedIcons.x === 3 && usedIcons.heart === 1;
-                if (allPlaced) {
-                    setShowFinalModal(true);
-                    setShowValidationError(false);
+                const iconsComplete = usedIcons.check === 3 && usedIcons.x === 3 && usedIcons.heart === 1;
+                const textComplete = improvementPlan.quality.trim() !== '' && 
+                                   improvementPlan.action1.trim() !== '' && 
+                                   improvementPlan.action2.trim() !== '' && 
+                                   improvementPlan.action3.trim() !== '';
+
+                if (!iconsComplete) {
+                    setValidationError("Falta que coloques todos los íconos (3 palomitas, 3 taches, 1 corazón)");
+                } else if (!textComplete) {
+                    setValidationError("Falta que completes la cualidad que deseas desarrollar y sus acciones");
                 } else {
-                    setShowValidationError(true);
+                    setValidationError("");
+                    setShowFinalModal(true);
                 }
             };
 
@@ -247,16 +232,10 @@
                     case 1:
                         return (
                             <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in relative w-full">
-                                <h1 className="text-5xl font-black text-[#003399] mb-8 leading-tight">
-                                    Cualidades de un <br/><span className="text-blue-600">Buen Líder</span>
-                                </h1>
+                                <h1 className="text-5xl font-black text-[#003399] mb-8 leading-tight">Cualidades de un <br/><span className="text-blue-600">Buen Líder</span></h1>
                                 <div className="w-24 h-1 bg-blue-600 rounded-full mb-12"></div>
-                                <button onClick={() => setStep(2)} className="bg-[#003399] hover:bg-blue-800 text-white px-10 py-4 rounded-full font-bold transition-all transform hover:scale-105 shadow-xl flex items-center gap-2">
-                                    Comenzar Actividad <IconChevronRight />
-                                </button>
-                                <button onClick={() => setShowCreditsModal(true)} className="absolute bottom-0 left-0 md:-bottom-8 md:-left-8 text-[#003399] font-bold text-sm bg-white/80 backdrop-blur px-6 py-2 rounded-xl shadow-sm border border-blue-100 hover:bg-blue-50 transition-colors flex items-center gap-2">
-                                    <IconInfo size={16}/> Créditos
-                                </button>
+                                <button onClick={() => setStep(2)} className="bg-[#003399] hover:bg-blue-800 text-white px-10 py-4 rounded-full font-bold transition-all transform hover:scale-105 shadow-xl flex items-center gap-2">Comenzar Actividad <IconChevronRight /></button>
+                                <button onClick={() => setShowCreditsModal(true)} className="absolute bottom-0 left-0 md:-bottom-8 md:-left-8 text-[#003399] font-bold text-sm bg-white/80 backdrop-blur px-6 py-2 rounded-xl shadow-sm border border-blue-100 hover:bg-blue-50 transition-colors flex items-center gap-2"><IconInfo size={16}/> Créditos</button>
                                 {showCreditsModal && (
                                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
                                         <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full text-left relative shadow-2xl animate-bounce-in">
@@ -265,11 +244,7 @@
                                             <div className="space-y-6">
                                                 <div>
                                                     <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Fuente:</h3>
-                                                    <p className="text-sm text-gray-600 leading-relaxed italic">
-                                                        Leis, M. & Wormington, S. (2026). 12 Essential qualities of effective leadership. Center for Creative Leadership. 
-                                                        <br/>
-                                                        <a href="https://www.ccl.org/articles/leading-effectively-articles/characteristics-good-leader/" target="_blank" className="text-blue-600 underline text-xs">https://www.ccl.org/articles/leading-effectively-articles/characteristics-good-leader/</a>
-                                                    </p>
+                                                    <p className="text-sm text-gray-600 leading-relaxed italic">Leis, M. & Wormington, S. (2026). 12 Essential qualities of effective leadership. Center for Creative Leadership. <br/><a href="https://www.ccl.org/articles/leading-effectively-articles/characteristics-good-leader/" target="_blank" className="text-blue-600 underline text-xs">https://www.ccl.org/articles/leading-effectively-articles/characteristics-good-leader/</a></p>
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div><h3 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Contenido:</h3><p className="text-sm font-bold text-gray-800">Dra. Claudia Ramos Garza</p></div>
@@ -292,9 +267,7 @@
                                     <p className="text-lg text-gray-700 italic">Al reverso de cada cualidad podrás encontrar una breve definición.</p>
                                     <p className="text-lg text-gray-700">Si consideras que falta una, puedes usar el comodín.</p>
                                 </div>
-                                <div className="mt-10 flex justify-end">
-                                    <button onClick={() => setStep(3)} className="bg-[#003399] text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-800 flex items-center gap-2 shadow-lg">Continuar <IconChevronRight /></button>
-                                </div>
+                                <div className="mt-10 flex justify-end"><button onClick={() => setStep(3)} className="bg-[#003399] text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-800 flex items-center gap-2 shadow-lg">Continuar <IconChevronRight /></button></div>
                             </div>
                         );
                     case 3:
@@ -314,8 +287,7 @@
                                             </div>
                                         ))}
                                     </div>
-                                    <div draggable={true} onDragStart={(e) => handleDragStart(e, QUALITIES.find(q => q.id === 'comodin'))} onClick={(e) => toggleFlipBank('comodin', e)}
-                                        className={`relative w-1/3 mx-auto h-20 perspective-1000 ${isSelected('comodin') ? 'card-used cursor-grab' : 'cursor-grab'}`}>
+                                    <div draggable={true} onDragStart={(e) => handleDragStart(e, QUALITIES.find(q => q.id === 'comodin'))} onClick={(e) => toggleFlipBank('comodin', e)} className={`relative w-1/3 mx-auto h-20 perspective-1000 ${isSelected('comodin') ? 'card-used cursor-grab' : 'cursor-grab'}`}>
                                         <div className={`relative w-full h-full transition-transform duration-500 preserve-3d ${flippedBank['comodin'] ? 'rotate-y-180' : ''}`}>
                                             <div className="absolute inset-0 backface-hidden bg-gray-500 text-white p-3 rounded-xl shadow-md flex items-center justify-center font-bold text-sm select-none">Comodín</div>
                                             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-gray-800 text-white p-2 rounded-xl shadow-md flex items-center justify-center text-center text-xs select-none">Cualidad adicional de tu elección.</div>
@@ -326,24 +298,13 @@
                                     <h3 className="text-xl font-bold text-[#003399] mb-4">Top 5 Prioridades</h3>
                                     <div className="space-y-3 flex-grow">
                                         {selections.map((item, idx) => (
-                                            <div key={idx} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, idx)}
-                                                className={`h-14 border-2 border-dashed rounded-xl flex items-center px-4 transition-all relative ${item ? 'border-solid border-blue-600 bg-blue-50 cursor-pointer' : 'border-gray-200 bg-gray-50'}`}
-                                                onClick={() => item && toggleFlipPriority(item.id)} draggable={!!item} onDragStart={(e) => item && handleDragStart(e, item)}>
+                                            <div key={idx} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, idx)} className={`h-14 border-2 border-dashed rounded-xl flex items-center px-4 transition-all relative ${item ? 'border-solid border-blue-600 bg-blue-50 cursor-pointer' : 'border-gray-200 bg-gray-50'}`} onClick={() => item && toggleFlipPriority(item.id)} draggable={!!item} onDragStart={(e) => item && handleDragStart(e, item)}>
                                                 <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold mr-3 text-xs shrink-0">{idx + 1}</span>
-                                                {item ? (
-                                                    <div className="flex items-center justify-between w-full relative perspective-1000 h-full">
-                                                        <div className={`relative w-full h-full transition-transform duration-500 preserve-3d ${flippedPriority[item.id] ? 'rotate-y-180' : ''}`}>
-                                                            <div className="absolute inset-0 backface-hidden flex items-center justify-between"><span className="font-bold text-gray-800 truncate pr-4">{item.id === 'comodin' && wildcardValue ? wildcardValue : item.text}</span><button onClick={(e) => { e.stopPropagation(); const n = [...selections]; n[idx] = null; setSelections(n); }} className="text-gray-400 hover:text-red-500 shrink-0"><IconRotateCcw/></button></div>
-                                                            <div className="absolute inset-0 backface-hidden rotate-y-180 flex items-center text-[9px] leading-tight text-blue-800 font-medium pr-6 bg-blue-50">{item.def}</div>
-                                                        </div>
-                                                    </div>
-                                                ) : <span className="text-gray-400 italic text-sm">Arrastra una cualidad aquí</span>}
+                                                {item ? (<div className="flex items-center justify-between w-full relative perspective-1000 h-full"><div className={`relative w-full h-full transition-transform duration-500 preserve-3d ${flippedPriority[item.id] ? 'rotate-y-180' : ''}`}><div className="absolute inset-0 backface-hidden flex items-center justify-between"><span className="font-bold text-gray-800 truncate pr-4">{item.id === 'comodin' && wildcardValue ? wildcardValue : item.text}</span><button onClick={(e) => { e.stopPropagation(); const n = [...selections]; n[idx] = null; setSelections(n); }} className="text-gray-400 hover:text-red-500 shrink-0"><IconRotateCcw/></button></div><div className="absolute inset-0 backface-hidden rotate-y-180 flex items-center text-[9px] leading-tight text-blue-800 font-medium pr-6 bg-blue-50">{item.def}</div></div></div>) : <span className="text-gray-400 italic text-sm">Arrastra una cualidad aquí</span>}
                                             </div>
                                         ))}
                                     </div>
-                                    {hasWildcard && (
-                                        <div className="mt-4 animate-fade-in"><label className="text-xs font-bold text-gray-500 mb-1 block">¿Cuál es tu comodín?</label><input type="text" value={wildcardValue} onChange={(e) => setWildcardValue(e.target.value)} placeholder="Ej. Empatía" className="w-full p-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none font-bold" /></div>
-                                    )}
+                                    {hasWildcard && (<div className="mt-4 animate-fade-in"><label className="text-xs font-bold text-gray-500 mb-1 block">¿Cuál es tu comodín?</label><input type="text" value={wildcardValue} onChange={(e) => setWildcardValue(e.target.value)} placeholder="Ej. Empatía" className="w-full p-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none font-bold" /></div>)}
                                     <button disabled={selections.some(s => s === null) || (hasWildcard && !wildcardValue.trim())} onClick={calculateScore} className={`mt-6 w-full py-4 rounded-xl font-black text-white shadow-lg transition-all ${selections.every(s => s !== null) ? 'bg-[#003399] hover:bg-blue-800' : 'bg-gray-400 cursor-not-allowed'}`}>Calcular Puntos</button>
                                 </div>
                             </div>
@@ -351,11 +312,7 @@
                     case 4:
                         return (
                             <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
-                                <div className="bg-white p-12 rounded-3xl shadow-2xl border-2 border-blue-50 relative overflow-hidden max-w-md w-full">
-                                    <IconTrophy /><h2 className="text-4xl font-black text-[#003399] mt-6 mb-2">¡Muy bien!</h2><p className="text-gray-600 mb-8 font-medium">Has completado el análisis de prioridades.</p>
-                                    <div className="bg-blue-600 rounded-2xl p-6 mb-10 text-white"><span className="block text-xs uppercase tracking-widest font-bold mb-1 opacity-80">Puntaje Obtenido</span><span className="text-7xl font-black">{score}</span></div>
-                                    <button onClick={() => setStep(5)} className="bg-[#003399] hover:bg-blue-800 text-white w-full py-4 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg">Continuar a la Parte 2</button>
-                                </div>
+                                <div className="bg-white p-12 rounded-3xl shadow-2xl border-2 border-blue-50 relative overflow-hidden max-w-md w-full"><IconTrophy /><h2 className="text-4xl font-black text-[#003399] mt-6 mb-2">¡Muy bien!</h2><p className="text-gray-600 mb-8 font-medium">Has completado el análisis de prioridades.</p><div className="bg-blue-600 rounded-2xl p-6 mb-10 text-white"><span className="block text-xs uppercase tracking-widest font-bold mb-1 opacity-80">Puntaje Obtenido</span><span className="text-7xl font-black">{score}</span></div><button onClick={() => setStep(5)} className="bg-[#003399] hover:bg-blue-800 text-white w-full py-4 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg">Continuar a la Parte 2</button></div>
                             </div>
                         );
                     case 5:
@@ -376,33 +333,17 @@
                                 <div className="flex flex-col md:flex-row gap-6 mb-6">
                                     <div className="md:w-1/2">
                                         <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
-                                            <h3 className="text-lg font-black text-[#003399] mb-4 flex items-center justify-between">
-                                                <span>Califica tus Cualidades</span>
-                                                <div className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">(Clic icono para quitarlo)</div>
-                                            </h3>
+                                            <h3 className="text-lg font-black text-[#003399] mb-4 flex items-center justify-between"><span>Califica tus Cualidades</span><div className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">(Clic icono para quitarlo)</div></h3>
                                             <div className="grid grid-cols-3 gap-2">
                                                 {QUALITIES.filter(q => q.id !== 'comodin').map(q => {
                                                     const data = iconMapping[q.id] || { status: null, heart: false };
                                                     return (
-                                                        <div key={q.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleIconDrop(e, q.id)}
-                                                            className={`p-2 h-24 rounded-xl border-2 flex flex-col items-center justify-between transition-all relative ${data.status || data.heart ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-50'}`}>
+                                                        <div key={q.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleIconDrop(e, q.id)} className={`p-2 h-24 rounded-xl border-2 flex flex-col items-center justify-between transition-all relative ${data.status || data.heart ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-50'}`}>
                                                             <span className="text-[10px] font-bold text-center leading-tight text-gray-600">{q.text}</span>
                                                             <div className="flex gap-1 h-12 items-center justify-center w-full">
-                                                                {data.status === 'check' && (
-                                                                    <div onClick={(e) => removeSpecificIcon(q.id, 'status', e)} className="p-1 hover:bg-white rounded cursor-pointer transition-colors">
-                                                                        <IconCheck className="text-green-600" size={24} />
-                                                                    </div>
-                                                                )}
-                                                                {data.status === 'x' && (
-                                                                    <div onClick={(e) => removeSpecificIcon(q.id, 'status', e)} className="p-1 hover:bg-white rounded cursor-pointer transition-colors">
-                                                                        <IconX className="text-red-600" size={24} />
-                                                                    </div>
-                                                                )}
-                                                                {data.heart && (
-                                                                    <div onClick={(e) => removeSpecificIcon(q.id, 'heart', e)} className="p-1 hover:bg-white rounded cursor-pointer transition-colors">
-                                                                        <IconHeart className="text-pink-500" fill="#ec4899" size={24} />
-                                                                    </div>
-                                                                )}
+                                                                {data.status === 'check' && (<div onClick={(e) => removeSpecificIcon(q.id, 'status', e)} className="p-1 hover:bg-white rounded cursor-pointer transition-colors"><IconCheck className="text-green-600" size={24} /></div>)}
+                                                                {data.status === 'x' && (<div onClick={(e) => removeSpecificIcon(q.id, 'status', e)} className="p-1 hover:bg-white rounded cursor-pointer transition-colors"><IconX className="text-red-600" size={24} /></div>)}
+                                                                {data.heart && (<div onClick={(e) => removeSpecificIcon(q.id, 'heart', e)} className="p-1 hover:bg-white rounded cursor-pointer transition-colors"><IconHeart className="text-pink-500" fill="#ec4899" size={24} /></div>)}
                                                                 {!data.status && !data.heart && <div className="w-8 h-8 rounded-lg bg-gray-100/50 flex items-center justify-center"><IconInfo size={14} className="opacity-20"/></div>}
                                                             </div>
                                                         </div>
@@ -417,10 +358,7 @@
                                             <div className="flex justify-around bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                                 {['check', 'x', 'heart'].map(type => (
                                                     <div key={type} className="text-center">
-                                                        <div draggable={usedIcons[type] < (type === 'heart' ? 1 : 3)} onDragStart={(e) => handleIconDragStart(e, type)}
-                                                            className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing ${type === 'check' ? 'bg-green-500 text-white' : type === 'x' ? 'bg-red-600 text-white' : 'bg-pink-500 text-white'} ${usedIcons[type] >= (type === 'heart' ? 1 : 3) ? 'opacity-20 cursor-not-allowed' : ''}`}>
-                                                            {type === 'check' ? <IconCheck size={32}/> : type === 'x' ? <IconX size={32}/> : <IconHeart size={32} fill="white"/>}
-                                                        </div>
+                                                        <div draggable={usedIcons[type] < (type === 'heart' ? 1 : 3)} onDragStart={(e) => handleIconDragStart(e, type)} className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing ${type === 'check' ? 'bg-green-500 text-white' : type === 'x' ? 'bg-red-600 text-white' : 'bg-pink-500 text-white'} ${usedIcons[type] >= (type === 'heart' ? 1 : 3) ? 'opacity-20 cursor-not-allowed' : ''}`}>{type === 'check' ? <IconCheck size={32}/> : type === 'x' ? <IconX size={32}/> : <IconHeart size={32} fill="white"/>}</div>
                                                         <span className="text-[10px] font-black text-gray-400 mt-2 block uppercase">{(type === 'heart' ? 1 : 3) - usedIcons[type]} Libres</span>
                                                     </div>
                                                 ))}
@@ -436,8 +374,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                {showValidationError && (
-                                    <div className="mb-4 bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl animate-fade-in flex items-center gap-3"><div className="bg-red-500 text-white rounded-full p-1"><IconX size={16}/></div><span className="font-bold text-sm">Falta que coloques todos los íconos (3 palomitas, 3 taches, 1 corazón)</span></div>
+                                {validationError && (
+                                    <div className="mb-4 bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl animate-fade-in flex items-center gap-3"><div className="bg-red-500 text-white rounded-full p-1"><IconX size={16}/></div><span className="font-bold text-sm">{validationError}</span></div>
                                 )}
                                 <div className="bg-[#003399] text-white p-6 rounded-3xl shadow-2xl flex flex-wrap items-center justify-between gap-6">
                                     <div className="flex flex-col gap-2"><span className="text-xs font-black opacity-60 uppercase tracking-widest">Mis 5 Prioridades:</span><div className="flex flex-wrap gap-2">{selections.map((s, idx) => (<span key={idx} className="bg-white/10 px-4 py-1.5 rounded-full text-xs font-bold border border-white/20">{s?.id === 'comodin' ? wildcardValue || 'Comodín' : s?.text}</span>))}</div></div>
@@ -453,16 +391,8 @@
                     default: return null;
                 }
             };
-
-            return (
-                <div className="min-h-screen relative flex flex-col items-center p-4 md:p-8">
-                    <div className="absolute inset-0 grid-bg pointer-events-none"></div>
-                    <header className="w-full max-w-6xl flex justify-between items-center mb-8 relative z-10"><img src={LOGO_URL} alt="TEC" className="h-10 md:h-12 object-contain" /><div className="flex gap-2">{[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className={`h-2 rounded-full transition-all duration-300 ${step === i ? 'bg-blue-600 w-10 shadow-lg' : 'bg-gray-200 w-2'}`}></div>))}</div></header>
-                    <main className="w-full max-w-6xl flex-grow flex items-center justify-center relative z-10">{renderScreen()}</main>
-                </div>
-            );
+            return (<div className="min-h-screen relative flex flex-col items-center p-4 md:p-8"><div className="absolute inset-0 grid-bg pointer-events-none"></div><header className="w-full max-w-6xl flex justify-between items-center mb-8 relative z-10"><img src={LOGO_URL} alt="TEC" className="h-10 md:h-12 object-contain" /><div className="flex gap-2">{[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className={`h-2 rounded-full transition-all duration-300 ${step === i ? 'bg-blue-600 w-10 shadow-lg' : 'bg-gray-200 w-2'}`}></div>))}</div></header><main className="w-full max-w-6xl flex-grow flex items-center justify-center relative z-10">{renderScreen()}</main></div>);
         };
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
